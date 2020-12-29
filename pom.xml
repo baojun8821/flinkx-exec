@@ -66,9 +66,16 @@
         <http.version>4.5.3</http.version>
         <dev.path>${basedir}/dev</dev.path>
         <package.name>release_1.8.8</package.name>
+        <hutool.version>5.5.2</hutool.version>
+
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+            <version>${hutool.version}</version>
+        </dependency>
         <!--Hadoop-->
         <dependency>
             <groupId>org.apache.hadoop</groupId>

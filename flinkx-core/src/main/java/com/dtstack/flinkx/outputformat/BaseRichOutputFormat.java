@@ -42,6 +42,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.types.Row;
+import org.mortbay.log.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -376,6 +377,7 @@ public abstract class BaseRichOutputFormat extends org.apache.flink.api.common.i
             errorLimiter.setErrMsg(errMsg);
             errorLimiter.setErrorData(row);
         }
+        Log.warn("写入数据失败：{}",errMsg);
     }
 
     private void updateStatisticsOfDirtyData(Row row, WriteRecordException e){

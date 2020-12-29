@@ -17,6 +17,8 @@
  */
 package com.dtstack.flinkx.rdb.outputformat;
 
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.json.JSONUtil;
 import com.dtstack.flinkx.enums.ColumnType;
 import com.dtstack.flinkx.enums.EWriteMode;
 import com.dtstack.flinkx.exception.WriteRecordException;
@@ -32,6 +34,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.flink.types.Row;
+import org.mortbay.log.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +49,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * OutputFormat for writing data to relational database.
@@ -211,12 +215,9 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
         try {
             for (; index < row.getArity(); index++) {
                 Object object = row.getField(index);
-                if( object instanceof String && StringUtils.isBlank((String) object)){
-                    if(!STRING_TYPES.contains(columnType.get(index))){
-                        object = null;
-                    }
-                }
-                preparedStatement.setObject(index+1, object);
+                Log.info("writeSingleRecordInternal ");
+
+                setColumnData(index, object);
             }
 
             preparedStatement.execute();
@@ -249,12 +250,8 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
             for (Row row : rows) {
                 for (int index = 0; index < row.getArity(); index++) {
                     Object object = row.getField(index);
-                    if( object instanceof String && StringUtils.isBlank((String) object)){
-                        if(!STRING_TYPES.contains(columnType.get(index))){
-                            object = null;
-                        }
-                    }
-                    preparedStatement.setObject(index+1, object);
+                    Log.info("writeMultipleRecordsInternal ");
+                    setColumnData(index, object);
                 }
                 preparedStatement.addBatch();
 
@@ -281,6 +278,33 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
             }
 
             throw e;
+        }
+    }
+
+    private void setColumnData(int index, Object object) throws SQLException {
+        if( object instanceof String && StringUtils.isBlank((String) object)){
+            if(!STRING_TYPES.contains(columnType.get(index))){
+                object = null;
+            }
+        }
+        if(object instanceof HashMap){
+            AtomicInteger finalIndex = new AtomicInteger(0);
+            Map dataMap = (HashMap) object;
+            Log.info("setColumnData param->{}", JSONUtil.toJsonPrettyStr(dataMap));
+
+            column.forEach(key -> {
+                try {
+                    Object columnData = dataMap.get(key);
+                    if(ObjectUtil.isEmpty(columnData))
+                        columnData = null;
+                    preparedStatement.setObject(finalIndex.addAndGet(1), columnData);
+                } catch (SQLException e) {
+                    Log.info(e.getMessage());
+                    e.printStackTrace();
+                }
+            });
+        }else{
+            preparedStatement.setObject(index+1, object);
         }
     }
 

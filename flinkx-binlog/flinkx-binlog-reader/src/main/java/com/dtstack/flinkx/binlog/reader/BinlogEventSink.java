@@ -17,6 +17,7 @@
  */
 package com.dtstack.flinkx.binlog.reader;
 
+import cn.hutool.json.JSONUtil;
 import com.alibaba.otter.canal.common.AbstractCanalLifeCycle;
 import com.alibaba.otter.canal.protocol.CanalEntry;
 import com.alibaba.otter.canal.sink.exception.CanalSinkException;
@@ -109,14 +110,14 @@ public class BinlogEventSink extends AbstractCanalLifeCycle implements com.aliba
             message.put("schema", schema);
             message.put("table", table);
             message.put("ts", idWorker.nextId());
-
             if (pavingData){
                 for (CanalEntry.Column column : rowData.getAfterColumnsList()) {
-                    message.put("after_" + column.getName(), column.getValue());
+                    message.put(column.getName(), column.getValue());
+
                 }
-                for (CanalEntry.Column column : rowData.getBeforeColumnsList()){
-                    message.put("before_" + column.getName(), column.getValue());
-                }
+//                for (CanalEntry.Column column : rowData.getBeforeColumnsList()){
+//                    message.put("before_" + column.getName(), column.getValue());
+//                }
             } else {
                 message.put("before", processColumnList(rowData.getBeforeColumnsList()));
                 message.put("after", processColumnList(rowData.getAfterColumnsList()));
@@ -157,6 +158,8 @@ public class BinlogEventSink extends AbstractCanalLifeCycle implements com.aliba
                 throw new RuntimeException((String) map.get("e"));
             }else{
                 row = Row.of(map);
+                LOG.info("binglog output data - {}", JSONUtil.toJsonPrettyStr(map));
+
             }
         } catch (InterruptedException e) {
             LOG.error("takeEvent interrupted error:{}", ExceptionUtil.getErrorMessage(e));
